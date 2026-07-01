@@ -56,8 +56,16 @@ class BaseListingSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'phone', 'user_type', 'image', 
-                  'date_joined', 'is_approved', 'is_active']
+        fields = [
+            'id', 'username', 'email', 'phone', 
+            'first_name', 'last_name',           # ✅ Add these
+            'address',                          # ✅ Add
+            'whatsapp',                         # ✅ Add
+            'nationality',                      # ✅ Add
+            'gender',                           # ✅ Add
+            'user_type', 'image', 
+            'date_joined', 'is_approved', 'is_active'
+        ]
         read_only_fields = ['id', 'date_joined']
 
 
