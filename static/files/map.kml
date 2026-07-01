@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="map" id="map">
+	<SimpleField name="fid" type="float"></SimpleField>
+	<SimpleField name="handle" type="int"></SimpleField>
+	<SimpleField name="block" type="int"></SimpleField>
+	<SimpleField name="etype" type="int"></SimpleField>
+	<SimpleField name="space" type="int"></SimpleField>
+	<SimpleField name="layer" type="string"></SimpleField>
+	<SimpleField name="olinetype" type="string"></SimpleField>
+	<SimpleField name="linetype" type="string"></SimpleField>
+	<SimpleField name="color" type="string"></SimpleField>
+	<SimpleField name="ocolor" type="int"></SimpleField>
+	<SimpleField name="color24" type="int"></SimpleField>
+	<SimpleField name="transparency" type="int"></SimpleField>
+	<SimpleField name="lweight" type="int"></SimpleField>
+	<SimpleField name="linewidth" type="float"></SimpleField>
+	<SimpleField name="ltscale" type="float"></SimpleField>
+	<SimpleField name="visible" type="int"></SimpleField>
+	<SimpleField name="width" type="float"></SimpleField>
+	<SimpleField name="thickness" type="float"></SimpleField>
+	<SimpleField name="ext" type="string"></SimpleField>
+</Schema>
+<Folder><name>map</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#map">
+		<SimpleData name="fid">4455</SimpleData>
+		<SimpleData name="handle">788062</SimpleData>
+		<SimpleData name="block">-1</SimpleData>
+		<SimpleData name="etype">18</SimpleData>
+		<SimpleData name="space">0</SimpleData>
+		<SimpleData name="layer">20PROPOSED LINE</SimpleData>
+		<SimpleData name="olinetype">bylayer</SimpleData>
+		<SimpleData name="linetype"></SimpleData>
+		<SimpleData name="color">byblock</SimpleData>
+		<SimpleData name="ocolor">0</SimpleData>
+		<SimpleData name="color24">-1</SimpleData>
+		<SimpleData name="transparency">0</SimpleData>
+		<SimpleData name="lweight">-3</SimpleData>
+		<SimpleData name="linewidth">0</SimpleData>
+		<SimpleData name="ltscale">1</SimpleData>
+		<SimpleData name="visible">1</SimpleData>
+		<SimpleData name="width">0</SimpleData>
+		<SimpleData name="thickness">0</SimpleData>
+		<SimpleData name="ext">(3:0,0,0.1)</SimpleData>
+	</SchemaData></ExtendedData>
+      <LineString><coordinates>43.3735207660357,2601068.19155813,0 43.3402098319493,2601063.78322134,0</coordinates></LineString>
+  </Placemark>
+</Folder>
+</Document></kml>
