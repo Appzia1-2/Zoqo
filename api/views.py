@@ -1142,6 +1142,109 @@ class CurrentUserView(generics.RetrieveUpdateAPIView):
 class UserRegistrationView(generics.CreateAPIView):
     serializer_class = UserRegistrationSerializer
     permission_classes = [AllowAny]
+    
+    def create(self, request, *args, **kwargs):
+        # ✅ Get user data from session
+        email = request.session.get('email')
+        first_name = request.session.get('first_name', '')
+        last_name = request.session.get('last_name', '')
+        phone = request.session.get('phone', '')
+        otp_verified = request.session.get('otp_verified', False)
+        
+        # Check if OTP was verified
+        if not otp_verified:
+            return Response(
+                {'error': 'Email not verified. Please verify OTP first.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if not email:
+            return Response(
+                {'error': 'Session expired. Please start registration again.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Get username and password from request
+        username = request.data.get('username')
+        password = request.data.get('password')
+        password2 = request.data.get('password2')
+        user_type = request.data.get('user_type', 'regular')
+        
+        # Validate
+        if not username or not password:
+            return Response(
+                {'error': 'Username and password are required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if password != password2:
+            return Response(
+                {'error': 'Passwords do not match'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if len(password) < 8:
+            return Response(
+                {'error': 'Password must be at least 8 characters'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if username exists
+        if User.objects.filter(username=username).exists():
+            return Response(
+                {'error': 'Username already taken'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if email exists (shouldn't happen but just in case)
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {'error': 'Email already registered'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # ✅ Create user using session data
+        try:
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                phone=phone,
+                password=password,
+                user_type=user_type,
+                is_active=True
+            )
+            
+            # ✅ Clear session
+            request.session.pop('otp', None)
+            request.session.pop('otp_email', None)
+            request.session.pop('otp_created_at', None)
+            request.session.pop('otp_verified', None)
+            request.session.pop('first_name', None)
+            request.session.pop('last_name', None)
+            request.session.pop('phone', None)
+            request.session.pop('email', None)
+            
+            return Response({
+                'success': True,
+                'message': 'Registration successful',
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email,
+                    'first_name': user.first_name,
+                    'last_name': user.last_name,
+                    'phone': user.phone,
+                    'user_type': user.user_type,
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class UserListView(generics.ListAPIView):
@@ -1548,85 +1651,92 @@ from .utils import *
 # ============================================
 
 class EmailOTPSendView(GenericAPIView):
-    """Send OTP to email for verification"""
+    """Send OTP to email and store user details"""
     permission_classes = [AllowAny]
     serializer_class = EmailOTPSerializer
     
     def post(self, request):
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            email = serializer.validated_data['email']
-            
-            # Check if email already registered
-            if User.objects.filter(email=email).exists():
-                return Response(
-                    {'error': 'Email already registered'}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            # Generate OTP
-            otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
-            
-            # Store in session
-            request.session['otp'] = otp
-            request.session['otp_email'] = email
-            request.session['otp_created_at'] = timezone.now().timestamp()
-            
-            # Send email
-            subject = f"Your Zoqo Verification Code"
-            message = f"""
-            Hello,
-            
-            Your verification code is: {otp}
-            
-            This code will expire in 5 minutes.
-            
-            If you didn't request this, please ignore this email.
-            
-            Best regards,
-            Zoqo Team
-            """
-            
-            try:
-                send_mail(
-                    subject,
-                    message,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [email],
-                    fail_silently=False,
-                )
-                return Response({'success': True, 'message': 'OTP sent to your email'})
-            except Exception as e:
-                return Response(
-                    {'error': f'Failed to send OTP: {str(e)}'},
-                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
-                )
+        # Get all user details from request
+        email = request.data.get('email')
+        first_name = request.data.get('first_name', '')
+        last_name = request.data.get('last_name', '')
+        phone = request.data.get('phone', '')
         
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        if not email:
+            return Response(
+                {'error': 'Email is required'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Check if email already registered
+        if User.objects.filter(email=email).exists():
+            return Response(
+                {'error': 'Email already registered'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # ✅ Store ALL user data in session
+        request.session['first_name'] = first_name
+        request.session['last_name'] = last_name
+        request.session['phone'] = phone
+        request.session['email'] = email
+        
+        # Generate OTP
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        request.session['otp'] = otp
+        request.session['otp_email'] = email
+        request.session['otp_created_at'] = timezone.now().timestamp()
+        
+        # Send email
+        subject = f"Your Zoqo Verification Code"
+        message = f"""
+        Hello {first_name or 'User'},
+        
+        Your verification code is: {otp}
+        
+        This code will expire in 5 minutes.
+        
+        If you didn't request this, please ignore this email.
+        
+        Best regards,
+        Zoqo Team
+        """
+        
+        try:
+            send_mail(
+                subject,
+                message,
+                settings.DEFAULT_FROM_EMAIL,
+                [email],
+                fail_silently=False,
+            )
+            return Response({
+                'success': True, 
+                'message': 'OTP sent to your email',
+                'email': email
+            })
+        except Exception as e:
+            return Response(
+                {'error': f'Failed to send OTP: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class EmailOTPVerifyView(GenericAPIView):
-    """Verify OTP and complete registration"""
+    """Verify OTP only - does NOT create user"""
     permission_classes = [AllowAny]
     
     def post(self, request):
         email = request.data.get('email')
         otp = request.data.get('otp')
-        username = request.data.get('username')
-        first_name = request.data.get('first_name', '')  # ✅ ADD THIS
-        last_name = request.data.get('last_name', '')    # ✅ ADD THIS
-        password = request.data.get('password')
-        phone = request.data.get('phone')
-        user_type = request.data.get('user_type', 'regular')
         
-        # Validate required fields
-        if not all([email, otp, username, password]):
+        if not email or not otp:
             return Response(
-                {'error': 'Email, OTP, username, and password are required'},
+                {'error': 'Email and OTP are required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check OTP
+        # Check OTP from session
         session_otp = request.session.get('otp')
         session_email = request.session.get('otp_email')
         otp_created_at = request.session.get('otp_created_at')
@@ -1644,57 +1754,20 @@ class EmailOTPVerifyView(GenericAPIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        if session_email != email or session_otp != otp:
+        if session_email != email or str(session_otp) != str(otp):
             return Response(
                 {'error': 'Invalid OTP'},
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        # Check if user already exists
-        if User.objects.filter(username=username).exists():
-            return Response(
-                {'error': 'Username already taken'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        # ✅ Mark OTP as verified in session
+        request.session['otp_verified'] = True
         
-        if User.objects.filter(email=email).exists():
-            return Response(
-                {'error': 'Email already registered'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-        
-        # Create user
-        try:
-            user = User.objects.create_user(
-                username=username,
-                email=email,
-                first_name=first_name,  # ✅ ADD THIS
-                last_name=last_name,    # ✅ ADD THIS
-                password=password,
-                phone=phone,
-                user_type=user_type,
-                is_active=True
-            )
-            
-            # Clear OTP session
-            del request.session['otp']
-            del request.session['otp_email']
-            del request.session['otp_created_at']
-            
-            # Return user data
-            serializer = UserSerializer(user)
-            return Response({
-                'success': True,
-                'message': 'Registration successful',
-                'user': serializer.data
-            })
-            
-        except Exception as e:
-            return Response(
-                {'error': str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
-            )
-
+        return Response({
+            'success': True,
+            'message': 'OTP verified successfully',
+            'email': email
+        })
 
 # ============================================
 # 2. PASSWORD RESET ENDPOINTS

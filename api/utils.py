@@ -213,11 +213,9 @@ def get_model_for_category(category):
             return None
     return None
 
-
 def get_category_display(category):
     """Get display name for a category"""
     return CATEGORY_DISPLAY.get(category.lower(), category.title())
-
 
 def get_listing_title(item):
     """Get title from any listing item"""
@@ -237,7 +235,6 @@ def get_listing_title(item):
         return f"{item.brand} {item.model_number}"
     return f"{item.__class__.__name__} #{item.id}"
 
-
 def get_listing_price(item):
     """Get price from any listing item"""
     if hasattr(item, 'price') and item.price:
@@ -248,7 +245,6 @@ def get_listing_price(item):
         return float(item.price_range)
     return 0
 
-
 def get_listing_image(item):
     """Get first image URL from any listing item"""
     if hasattr(item, 'images'):
@@ -258,21 +254,12 @@ def get_listing_image(item):
                 return first_image.image.url
         except:
             pass
-    
     if hasattr(item, 'image') and item.image:
         try:
             return item.image.url
         except:
             pass
-    
-    if hasattr(item, 'main_image') and item.main_image:
-        try:
-            return item.main_image.url
-        except:
-            pass
-    
     return None
-
 
 def get_listing_city(item):
     """Get city name from any listing item"""
@@ -288,11 +275,9 @@ def get_listing_city(item):
         }
     return None
 
-
 def get_boosted_listings_all(limit=20):
     """Get boosted listings across all categories"""
     results = []
-    
     for category_key in CATEGORY_MODEL_MAP.keys():
         model = get_model_for_category(category_key)
         if model:
@@ -302,13 +287,11 @@ def get_boosted_listings_all(limit=20):
                     is_active=True,
                     expires_at__gt=timezone.now()
                 ).values_list('listing_id', flat=True)
-                
                 if boost_ids:
                     items = model.objects.filter(
                         id__in=boost_ids,
                         status='approved'
                     ).order_by('-created_at')[:5]
-                    
                     for item in items:
                         results.append({
                             'item': item,
@@ -316,10 +299,8 @@ def get_boosted_listings_all(limit=20):
                         })
             except:
                 pass
-    
     results.sort(key=lambda x: getattr(x['item'], 'created_at', timezone.now()), reverse=True)
     return results[:limit]
-
 
 def get_favorite_product_data(favorite):
     """Get product data from a favorite object"""
@@ -327,18 +308,14 @@ def get_favorite_product_data(favorite):
         product = favorite.content_object
         if not product:
             return None
-        
         model_name = product.__class__.__name__.lower()
         category_key = None
-        
         for key, value in CATEGORY_MODEL_MAP.items():
             if value.lower() == model_name:
                 category_key = key
                 break
-        
         if not category_key:
             category_key = model_name
-        
         return {
             'id': product.id,
             'category': category_key,
