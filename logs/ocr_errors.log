@@ -18458,3 +18458,62 @@ django.template.exceptions.TemplateDoesNotExist: 404.html
 ERROR 2026-06-30 15:20:06,840 log "GET /product/autoaccessorypart/9/ HTTP/1.1" 500 91193
 ERROR 2026-07-01 10:04:47,432 log Internal Server Error: /ai-chat/
 ERROR 2026-07-01 10:04:47,444 log "POST /ai-chat/ HTTP/1.1" 500 415
+ERROR 2026-07-02 12:44:08,668 log Internal Server Error: /ai-chat/
+ERROR 2026-07-02 12:44:08,702 log "POST /ai-chat/ HTTP/1.1" 500 415
+ERROR 2026-07-02 14:08:46,956 log Internal Server Error: /ai-chat/
+ERROR 2026-07-02 14:08:46,957 log "POST /ai-chat/ HTTP/1.1" 500 415
+ERROR 2026-07-02 14:26:40,518 log Internal Server Error: /land
+Traceback (most recent call last):
+  File "C:\Users\Kevin Chacko\AppData\Roaming\Python\Python314\site-packages\pytesseract\pytesseract.py", line 275, in run_tesseract
+    proc = subprocess.Popen(cmd_args, **subprocess_args())
+  File "C:\Python314\Lib\subprocess.py", line 1038, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\subprocess.py", line 1552, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                             # no special security
+                             ^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+                             cwd,
+                             ^^^^
+                             startupinfo)
+                             ^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\Users\Kevin Chacko\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "C:\Users\Kevin Chacko\AppData\Roaming\Python\Python314\site-packages\django\core\handlers\base.py", line 198, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "C:\Appzia\Zoqo Deal\oman 18-06-26\oman\oman_app\views.py", line 2817, in land
+    extracted_text = pytesseract.image_to_string(
+        img, config="--oem 3 --psm 6"
+    )
+  File "C:\Users\Kevin Chacko\AppData\Roaming\Python\Python314\site-packages\pytesseract\pytesseract.py", line 486, in image_to_string
+    return {
+           ~
+    ...<2 lines>...
+        Output.STRING: lambda: run_and_get_output(*args),
+        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    }[output_type]()
+    ~~~~~~~~~~~~~~^^
+  File "C:\Users\Kevin Chacko\AppData\Roaming\Python\Python314\site-packages\pytesseract\pytesseract.py", line 489, in <lambda>
+    Output.STRING: lambda: run_and_get_output(*args),
+                           ~~~~~~~~~~~~~~~~~~^^^^^^^
+  File "C:\Users\Kevin Chacko\AppData\Roaming\Python\Python314\site-packages\pytesseract\pytesseract.py", line 352, in run_and_get_output
+    run_tesseract(**kwargs)
+    ~~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\Kevin Chacko\AppData\Roaming\Python\Python314\site-packages\pytesseract\pytesseract.py", line 280, in run_tesseract
+    raise TesseractNotFoundError()
+pytesseract.pytesseract.TesseractNotFoundError: C:\Program Files\Tesseract-OCR\tesseract.exe is not installed or it's not in your PATH. See README file for more information.
+ERROR 2026-07-02 14:26:40,599 log "POST /land?listing_type=sell HTTP/1.1" 500 140684
