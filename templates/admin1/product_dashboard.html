@@ -954,7 +954,7 @@ function confirmBulkAction() {
                                 <button class="sub-badge" onclick="showSection('headset-section', event)">Headsets <span class="count">{{ headset|length }}</span></button>
                                 <button class="sub-badge" onclick="showSection('cover-section', event)">Covers <span class="count">{{ cover|length }}</span></button>
                                 <button class="sub-badge" onclick="showSection('accessory-section', event)">Accessories <span class="count">{{ accessory|length }}</span></button>
-                                <button class="sub-badge" onclick="showSection('mobilesim-section', event)">SIM Cards <span class="count">{{ mobilesim|length }}</span></button>
+                                <button class="sub-badge" onclick="showSection('mobilesim-section', event)">VIP Mobile Number <span class="count">{{ mobilesim|length }}</span></button>
                             </div>
 
                             <!-- SERVICES SUB-MENU -->
@@ -5051,7 +5051,7 @@ function confirmBulkAction() {
 <!-- MOBILESIM SECTION -->
 <div id="mobilesim-section" class="property-section" style="display: none;">
     <div class="section-header">
-        <h2><i class="fas fa-sim-card"></i> SIM Cards</h2>
+        <h2><i class="fas fa-sim-card"></i> VIP Mobile Number</h2>
         <span class="product-count-badge">{{ mobilesim|length }} Items</span>
     </div>
     {% if mobilesim %}
@@ -5106,7 +5106,7 @@ function confirmBulkAction() {
     {% else %}
     <div class="no-data">
         <i class="fas fa-sim-card"></i>
-        <p>No SIM cards found.</p>
+        <p>No VIP Mobile Number found.</p>
     </div>
     {% endif %}
 </div>
