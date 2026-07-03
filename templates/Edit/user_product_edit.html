@@ -83,18 +83,38 @@
         .actions { flex-direction: column-reverse; }
         .btn { width: 100%; justify-content: center; }
     }
+
+    /* ===== Validation ===== */
+    .form-control.is-invalid,
+    .form-select.is-invalid,
+    .choices.is-invalid .choices__inner {
+        border-color: var(--danger) !important;
+        box-shadow: 0 0 0 3px rgba(239,68,68,.12) !important;
+    }
+    .field-error {
+        display: none;
+        font-size: 12px;
+        color: var(--danger);
+        margin-top: 5px;
+        align-items: center;
+        gap: 5px;
+    }
+    .field-error.show { display: flex; }
+    .form-group.has-error .field-error { display: flex; }
 </style>
 
 <div class="edit-wrapper">
 
-    {% if messages %}
+    <!-- {% if messages %}
         {% for message in messages %}
-        <div class="alert alert-{{ message.tags }}">
-            <i class="fas fa-{% if message.tags == 'success' %}check-circle{% elif message.tags == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
+        {% if message.extra_tags and 'product_edit' in message.extra_tags %}
+        <div class="alert alert-{{ message.level_tag }}">
+            <i class="fas fa-{% if message.level_tag == 'success' %}check-circle{% elif message.level_tag == 'error' %}exclamation-circle{% else %}info-circle{% endif %}"></i>
             {{ message }}
         </div>
+        {% endif %}
         {% endfor %}
-    {% endif %}
+    {% endif %} -->
 
     <div class="page-header">
         <div>
@@ -104,7 +124,7 @@
         <span class="id-badge"><i class="fas fa-hashtag"></i> ID {{ product.id }}</span>
     </div>
 
-    <form method="POST" id="editForm" enctype="multipart/form-data">
+    <form method="POST" id="editForm" enctype="multipart/form-data" novalidate>
         {% csrf_token %}
 
         <!-- ===== Images ===== -->
@@ -234,6 +254,7 @@
                     {% endif %}
 
                     {% if field.help_text %}<div class="help">{{ field.help_text }}</div>{% endif %}
+                    <div class="field-error"><i class="fas fa-circle-exclamation"></i> This field is required.</div>
                 </div>
                 {% endfor %}
             </div>
@@ -294,6 +315,76 @@
                 searchResultLimit: 50,
                 placeholderValue: 'Search...'
             });
+        });
+    });
+
+    // ===== Required-field validation: scroll to & highlight first empty field =====
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('editForm');
+        if (!form) return;
+
+        function isEmpty(field) {
+            if (field.type === 'checkbox' || field.type === 'radio') {
+                return !field.checked;
+            }
+            return !field.value || !field.value.trim();
+        }
+
+        function clearError(group, field) {
+            group.classList.remove('has-error');
+            field.classList.remove('is-invalid');
+            const choicesWrap = group.querySelector('.choices');
+            if (choicesWrap) choicesWrap.classList.remove('is-invalid');
+        }
+
+        function markError(group, field) {
+            group.classList.add('has-error');
+            field.classList.add('is-invalid');
+            const choicesWrap = group.querySelector('.choices');
+            if (choicesWrap) choicesWrap.classList.add('is-invalid');
+        }
+
+        form.addEventListener('submit', function (e) {
+            const requiredFields = form.querySelectorAll('[required]');
+            let firstInvalid = null;
+
+            requiredFields.forEach(function (field) {
+                const group = field.closest('.form-group') || field.parentElement;
+                if (isEmpty(field)) {
+                    markError(group, field);
+                    if (!firstInvalid) firstInvalid = { field, group };
+                } else {
+                    clearError(group, field);
+                }
+            });
+
+            if (firstInvalid) {
+                e.preventDefault();
+                firstInvalid.group.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                // Focus the real input if visible; for Choices.js selects,
+                // focus its search box instead so the caret lands somewhere useful.
+                const choicesInput = firstInvalid.group.querySelector('.choices__input');
+                if (choicesInput) {
+                    setTimeout(function () { choicesInput.focus(); }, 350);
+                } else {
+                    setTimeout(function () { firstInvalid.field.focus(); }, 350);
+                }
+            }
+        });
+
+        // Clear the red state as soon as the user fixes a field.
+        form.addEventListener('input', function (e) {
+            const field = e.target;
+            if (!field.hasAttribute || !field.hasAttribute('required')) return;
+            const group = field.closest('.form-group') || field.parentElement;
+            if (!isEmpty(field)) clearError(group, field);
+        });
+        form.addEventListener('change', function (e) {
+            const field = e.target;
+            if (!field.hasAttribute || !field.hasAttribute('required')) return;
+            const group = field.closest('.form-group') || field.parentElement;
+            if (!isEmpty(field)) clearError(group, field);
         });
     });
 </script>

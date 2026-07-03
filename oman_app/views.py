@@ -65915,6 +65915,10 @@ MAP_FIELDS = {'latitude', 'longitude', 'city'}
 # Statuses that allow editing
 EDITABLE_STATUSES = ['pending', 'approved']
 
+# Tag used to scope messages to THIS view only, so stray messages from other
+# pages (e.g. "Profile updated successfully") don't leak into this template.
+EDIT_TAG = 'product_edit'
+
 
 # =============================================================================
 # USER PRODUCT EDIT VIEW
@@ -65924,21 +65928,23 @@ EDITABLE_STATUSES = ['pending', 'approved']
 def user_product_edit(request, model_name, pk):
     """
     Edit user's product listing.
-    
+
     ✅ Only 'pending' and 'approved' listings can be edited
     ✅ User can only edit their own listings
     ✅ Approved listings become 'pending' after changes
+    ✅ Messages added here are tagged so only this view's messages render
+       on this template (see extra_tags=EDIT_TAG below)
     """
-    
+
     # 1. Resolve the model from the lowercase name
     try:
         model = apps.get_model('oman_app', model_name)
     except LookupError:
-        messages.error(request, "Invalid product type.")
+        messages.error(request, "Invalid product type.", extra_tags=EDIT_TAG)
         return redirect(adss, user_id=request.user.id)  # ✅ adss is defined above
 
     if model is None:
-        messages.error(request, "Invalid product type.")
+        messages.error(request, "Invalid product type.", extra_tags=EDIT_TAG)
         return redirect(adss, user_id=request.user.id)
 
     # 2. Ownership lock — user can ONLY load their own listing
@@ -65947,11 +65953,15 @@ def user_product_edit(request, model_name, pk):
     # 2b. Check if status allows editing
     if hasattr(product, 'status'):
         if product.status not in EDITABLE_STATUSES:
-            messages.error(request, f"This listing has status '{product.status}' and cannot be edited.")
+            messages.error(
+                request,
+                f"This listing has status '{product.status}' and cannot be edited.",
+                extra_tags=EDIT_TAG,
+            )
             return redirect(adss, user_id=request.user.id)
     else:
         # If model doesn't have status field, block editing
-        messages.error(request, "This product type doesn't support editing.")
+        messages.error(request, "This product type doesn't support editing.", extra_tags=EDIT_TAG)
         return redirect(adss, user_id=request.user.id)
 
     # 2c. Store original status for later comparison
@@ -66015,12 +66025,16 @@ def user_product_edit(request, model_name, pk):
         try:
             # ✅ Re-validate status on POST (defense in depth)
             if product.status not in EDITABLE_STATUSES:
-                messages.error(request, "This listing cannot be edited due to status restrictions.")
+                messages.error(
+                    request,
+                    "This listing cannot be edited due to status restrictions.",
+                    extra_tags=EDIT_TAG,
+                )
                 return redirect(adss, user_id=request.user.id)
-            
+
             # Track if any changes were made to the product
             changes_made = False
-            
+
             for field in product._meta.fields:
                 field_name = field.name
                 if field_name in EXCLUDED_EDIT_FIELDS:
@@ -66094,13 +66108,17 @@ def user_product_edit(request, model_name, pk):
                         changes_made = True
 
             # ManyToMany fields
+            # NOTE: request.POST.getlist() returns strings, while
+            # values_list('id', flat=True) returns ints. Cast both sides
+            # to strings before comparing, otherwise this will almost
+            # always report "changed" even when nothing changed.
             for field in product._meta.many_to_many:
                 field_name = field.name
                 if field_name in EXCLUDED_EDIT_FIELDS or field_name in ['user', 'images', 'videos']:
                     continue
                 new_values = request.POST.getlist(field_name)
                 current_values = list(getattr(product, field_name).values_list('id', flat=True))
-                if set(new_values) != set(current_values):
+                if set(new_values) != set(str(v) for v in current_values):
                     getattr(product, field_name).set(new_values)
                     changes_made = True
 
@@ -66135,22 +66153,29 @@ def user_product_edit(request, model_name, pk):
             if changes_made and hasattr(product, 'status'):
                 if product.status == 'approved':
                     product.status = 'pending'
-                    messages.info(request, "This listing has been changed and is now pending re-approval.")
+                    messages.info(
+                        request,
+                        "This listing has been changed and is now pending re-approval.",
+                        extra_tags=EDIT_TAG,
+                    )
                 elif product.status == 'pending':
-                    messages.info(request, "Your pending listing has been updated.")
+                    messages.info(request, "Your pending listing has been updated.", extra_tags=EDIT_TAG)
 
             # Only save if changes were made
             if changes_made:
                 product.save()
-                messages.success(request, "Your listing has been updated successfully.")
+                messages.success(request, "Your listing has been updated successfully.", extra_tags=EDIT_TAG)
             else:
-                messages.info(request, "No changes were made to your listing.")
+                messages.info(request, "No changes were made to your listing.", extra_tags=EDIT_TAG)
 
             return redirect(adss, user_id=request.user.id)
 
         except Exception as e:
             logger.error(f"Error updating product {pk}: {str(e)}", exc_info=True)
-            messages.error(request, f"Error updating listing: {str(e)}")
+            messages.error(request, f"Error updating listing: {str(e)}", extra_tags=EDIT_TAG)
+            # NOTE: intentionally no return/redirect here — falls through to
+            # the render() below so the user sees the error on this same
+            # page without losing their form state.
 
     # ------------------------------------------------------------------
     # 6. Render
